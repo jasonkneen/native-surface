@@ -26,7 +26,11 @@ export interface NativeSurfaceProps {
   /** Fires ONCE, after the engine has loaded and the first children render
    *  has been committed and painted — the earliest moment a capture of the
    *  canvas shows real UI rather than a blank surface. */
-  onReady?: () => void;
+  onReady?: (root: NativeRoot) => void;
+  /** Receives the root on mount and null on teardown. No global discovery. */
+  rootRef?: React.Ref<NativeRoot>;
+  /** Explicitly enable the legacy global debug registry for this surface. */
+  debug?: boolean;
   children: React.ReactElement;
 }
 
@@ -62,16 +66,6 @@ export function NativeSurface(props: NativeSurfaceProps): React.JSX.Element {
       onAction,
     });
     rootRef.current = root;
-    // QA/tooling hook: expose live roots for layout inspection (browser only).
-    // __canvasNativeRoots is the deprecated pre-rename alias — same Set, so
-    // existing drivers keep working; delete through either name covers both.
-    const g = globalThis as unknown as {
-      __nativeSurfaceRoots?: Set<NativeRoot>;
-      __canvasNativeRoots?: Set<NativeRoot>;
-    };
-    const roots = (g.__nativeSurfaceRoots ??= g.__canvasNativeRoots ?? new Set());
-    g.__canvasNativeRoots ??= roots;
-    roots.add(root);
     return () => {
       rootRef.current = null;
       // A remount (e.g. StrictMode's mount/unmount/remount) creates a fresh
@@ -79,12 +73,34 @@ export function NativeSurface(props: NativeSurfaceProps): React.JSX.Element {
       // render effect arm onReady again. The rootRef guard on the flush
       // callback keeps a late resolution from this dead root from firing.
       readyFiredRef.current = false;
-      roots.delete(root);
       root.unmount();
     };
     // create exactly once per canvas; resize + rerender handled below
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const externalRef = props.rootRef;
+    if (typeof externalRef === 'function') externalRef(rootRef.current);
+    else if (externalRef) externalRef.current = rootRef.current;
+    return () => {
+      if (typeof externalRef === 'function') externalRef(null);
+      else if (externalRef) externalRef.current = null;
+    };
+  }, [props.rootRef]);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!props.debug || !root) return;
+    const g = globalThis as unknown as {
+      __nativeSurfaceRoots?: Set<NativeRoot>;
+      __canvasNativeRoots?: Set<NativeRoot>;
+    };
+    const roots = (g.__nativeSurfaceRoots ??= g.__canvasNativeRoots ?? new Set());
+    g.__canvasNativeRoots ??= roots;
+    roots.add(root);
+    return () => { roots.delete(root); };
+  }, [props.debug]);
 
   useEffect(() => {
     sizeRef.current = { width, height, dpr };
@@ -116,7 +132,7 @@ export function NativeSurface(props: NativeSurfaceProps): React.JSX.Element {
       readyFiredRef.current = true;
       void root.flush().then(() => {
         // Guard against the surface unmounting/remounting before ready.
-        if (rootRef.current === root) onReadyRef.current?.();
+        if (rootRef.current === root) onReadyRef.current?.(root);
       });
     }
   });

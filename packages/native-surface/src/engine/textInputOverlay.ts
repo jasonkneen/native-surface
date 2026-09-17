@@ -125,8 +125,10 @@ export function createDomInputOverlay(node: CNode, controller: OverlayController
     const e = evt as globalThis.KeyboardEvent;
     controller.onKeyPress(e.key);
     if (e.key === 'Enter') {
-      const behavior = spec.submitBehavior ?? (spec.multiline ? 'newline' : 'blurAndSubmit');
-      const newline = spec.multiline && (behavior === 'newline' || e.shiftKey);
+      const current = specOfInput(node);
+      const behavior = current.submitBehavior ?? (current.blurOnSubmit != null
+        ? current.blurOnSubmit ? 'blurAndSubmit' : 'submit' : current.multiline ? 'newline' : 'blurAndSubmit');
+      const newline = current.multiline && (behavior === 'newline' || e.shiftKey);
       if (!newline) {
         e.preventDefault();
         controller.onSubmit();
@@ -148,6 +150,7 @@ export function createDomInputOverlay(node: CNode, controller: OverlayController
   if (spec.selectTextOnFocus) el.select();
 
   return {
+    element: el,
     sync(value: string) {
       const idx = pendingReports.indexOf(value);
       if (idx !== -1) {

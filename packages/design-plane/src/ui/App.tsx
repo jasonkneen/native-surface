@@ -398,6 +398,7 @@ export function App(): ReactElement {
                         <pre className="err">{err}</pre>
                       ) : mounted ? (
                         <NativeSurface
+                          debug
                           key={item.id}
                           width={width}
                           height={height}

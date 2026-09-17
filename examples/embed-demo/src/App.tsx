@@ -72,7 +72,7 @@ export function App() {
           <IslandHead name="Counter" meta="390 × 140" />
           <div className="island--wide__body">
             <div className="surface-frame">
-              <NativeSurface width={390} height={140} onAction={handleAction}>
+              <NativeSurface debug={import.meta.env.DEV} width={390} height={140} onAction={handleAction}>
                 <Counter />
               </NativeSurface>
             </div>
@@ -83,7 +83,7 @@ export function App() {
         <article className="island">
           <IslandHead name="Profile" meta="390 × 220" />
           <div className="surface-frame">
-            <NativeSurface width={390} height={220}>
+            <NativeSurface debug={import.meta.env.DEV} width={390} height={220}>
               <ProfileCard />
             </NativeSurface>
           </div>
@@ -92,7 +92,7 @@ export function App() {
         <article className="island">
           <IslandHead name="Buttons" meta="390 × 180" />
           <div className="surface-frame">
-            <NativeSurface width={390} height={180}>
+            <NativeSurface debug={import.meta.env.DEV} width={390} height={180}>
               <ButtonRow />
             </NativeSurface>
           </div>
@@ -100,7 +100,7 @@ export function App() {
 
         <CodeToggleIsland name="Feed" meta="390 × 420" file="rn/Feed.tsx" source={feedSource}>
           <div className="surface-frame">
-            <NativeSurface width={390} height={420}>
+            <NativeSurface debug={import.meta.env.DEV} width={390} height={420}>
               <Feed />
             </NativeSurface>
           </div>
@@ -114,7 +114,7 @@ export function App() {
         >
           <div className="surface-frame">
             <Suspense fallback={<div style={{ width: 390, height: 720 }} />}>
-              <NativeSurface width={390} height={720}>
+              <NativeSurface debug={import.meta.env.DEV} width={390} height={720}>
                 <NavApp />
               </NativeSurface>
             </Suspense>
@@ -129,7 +129,7 @@ export function App() {
         >
           <div className="surface-frame">
             <Suspense fallback={<div style={{ width: 390, height: 640 }} />}>
-              <NativeSurface width={390} height={640}>
+              <NativeSurface debug={import.meta.env.DEV} width={390} height={640}>
                 <SheetScreen />
               </NativeSurface>
             </Suspense>

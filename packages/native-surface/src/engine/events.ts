@@ -34,7 +34,7 @@ function slopFor(node: CNode): { t: number; r: number; b: number; l: number } {
   return { t: raw.top ?? 0, r: raw.right ?? 0, b: raw.bottom ?? 0, l: raw.left ?? 0 };
 }
 
-function pointerEventsOf(node: CNode): string {
+export function pointerEventsOf(node: CNode): string {
   // Precedence mirrors RN: an imperative setNativeProps write is the latest
   // word — reanimated web delivers useAnimatedProps as a top-level patch key
   // OR merged into the style patch (so it lands in nativeStyle) — then the

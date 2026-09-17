@@ -55,6 +55,15 @@ interface PortalInstance {
 
 const instances = new Map<CNode, PortalInstance>();
 
+/** Optional observation: existing live handles, without a DOM/tree query. */
+export function portalElementsOf(root: CNode): Array<{ node: CNode; element: HTMLElement }> {
+  const out: Array<{ node: CNode; element: HTMLElement }> = [];
+  for (const [node, inst] of instances) {
+    if (inst.root === root) out.push({ node, element: inst.el });
+  }
+  return out;
+}
+
 /**
  * True when the node would paint: no ancestor (or self) is hidden or
  * display:none, and the frame has area. Scroll-ancestor clipping is NOT

@@ -131,7 +131,8 @@ On `0.1.0-alpha.0`, `onReady` never fires under `<React.StrictMode>` (the
 surface still paints and handles input). That is fixed in later versions —
 `onReady` fires exactly once under StrictMode. If you are stuck on alpha.0:
 don't gate UI on `onReady`; await `root.flush()` on the root from
-`globalThis.__nativeSurfaceRoots` instead.
+`globalThis.__nativeSurfaceRoots` instead (enable it with `<NativeSurface debug>`,
+or obtain the root directly through `onReady(root)` / `rootRef`).
 
 ## SSR and isomorphic hosts
 
@@ -373,16 +374,19 @@ a 0-width screen makes the animation a no-op.
 - Keep the top card opaque and full-size, or the screen below shows through
   during the gesture.
 
-## Driving the canvas from tests and tools
+## Remote control
 
-Every mounted surface registers in `globalThis.__nativeSurfaceRoots`.
+Surfaces with explicit `<NativeSurface debug>` register in
+`globalThis.__nativeSurfaceRoots`. For new automation integrations, prefer
+`onReady(root)` / `rootRef` and the optional [`native-surface/automation` entry](./AUTOMATION.md).
 `root.getLayoutTree()` returns frames plus `testID`, `role`, `label`,
 `placeholder`, and text; `await root.flush()` waits for a committed paint.
 
 - **Typing into a TextInput:** a *focused* TextInput is a real DOM `<input>`
   overlaid on the canvas. Click the canvas at the field's layout-tree center
   first so the overlay mounts and focuses; after that, synthetic keyboard
-  input (`page.keyboard.type(...)` and friends) works normally.
+  input through `controller.type(...)` and `controller.key(...)` uses the
+  focused field's selection and input events.
 - **Inactive tab screens stay in the layout tree.** Bottom-tab navigators
   keep inactive screens mounted, and `getLayoutTree()` returns them at the
   same origin as the visible screen — a text query can match a hidden

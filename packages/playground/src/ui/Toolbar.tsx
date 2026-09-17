@@ -75,7 +75,7 @@ export function Toolbar(props: ToolbarProps): React.JSX.Element {
     <header className="toolbar">
       <div className="brand">
         <span className="brand-mark" aria-hidden="true" />
-        <span className="brand-name">Native Canvas Playground</span>
+        <span className="brand-name">Native Surface Playground</span>
         <a className="chip" href="/plane" title="Pan/zoom mock of app routes">
           Plane
         </a>

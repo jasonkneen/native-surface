@@ -27,7 +27,8 @@
     "assets",
     "LICENSE",
     "README.md",
-    "TROUBLESHOOTING.md"
+    "TROUBLESHOOTING.md",
+    "AUTOMATION.md"
   ],
   "type": "module",
   "bin": {
@@ -40,7 +41,8 @@
       "types": "./types/react-native.d.ts"
     },
     "./assets/*": "./assets/*",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./automation": "./src/automation/index.ts"
   },
   "scripts": {
     "test": "vitest run",
@@ -89,7 +91,11 @@
         "types": "./types/react-native.d.ts"
       },
       "./assets/*": "./assets/*",
-      "./package.json": "./package.json"
+      "./package.json": "./package.json",
+      "./automation": {
+        "types": "./dist/automation/index.d.ts",
+        "default": "./src/automation/index.ts"
+      }
     }
   }
 }

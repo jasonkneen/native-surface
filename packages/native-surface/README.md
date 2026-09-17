@@ -91,14 +91,19 @@ Something not working? [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) covers the
 common integration failures by symptom — blank canvas, SSR hosts, tsc errors,
 snapping transitions, missing images, WASM MIME types, and more.
 
-## Driving it from tests / tools
+## Remote control
 
-Every mounted surface registers in `globalThis.__nativeSurfaceRoots`.
-`root.getLayoutTree()` returns frames plus `testID`, `role`, `label`,
-`placeholder`, and text — enough to locate an element and click its center
-with Playwright/Puppeteer. `root.flush()` awaits a committed paint;
-`<NativeSurface onReady>` fires after the first one. Focused `TextInput`s are
-real DOM overlays, so `page.keyboard.type(...)` just works.
+Use the optional [`native-surface/automation` entry](./AUTOMATION.md) to capture
+screenshots, inspect clipped structural snapshots, inject coordinate input, and
+wait for painted changes or visual stability. Obtain the root through
+`<NativeSurface onReady={root => ...}>` or `rootRef`. No automation or debug
+globals are enabled by default. Existing drivers can explicitly pass `debug`
+to enable the legacy `__nativeSurfaceRoots` registry.
+
+Connect the controller to your application's WebSocket or IPC transport to let
+another process drive it. The library opens no connections or servers. Focused
+inputs and portal content require an external display capture provider when
+capturing the complete screen; see the automation guide.
 
 ## Limits
 

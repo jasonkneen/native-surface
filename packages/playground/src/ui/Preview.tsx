@@ -116,6 +116,7 @@ export function Preview(props: PreviewProps): React.JSX.Element {
             ) : (
               <PreviewBoundary resetKey={surfaceKey}>
                 <NativeSurface
+                  debug
                   key={surfaceKey}
                   width={innerWidth}
                   height={innerHeight}

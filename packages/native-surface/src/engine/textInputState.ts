@@ -44,6 +44,8 @@ export interface TextInputSpec {
 
 /** What the browser overlay must provide; `null` factory = headless (Node). */
 export interface InputOverlay {
+  /** Existing overlay handle, for optional physical-input tooling. */
+  readonly element?: HTMLInputElement | HTMLTextAreaElement;
   /** Push the engine's value into the DOM element, preserving the caret. */
   sync(value: string): void;
   /** Re-derive fixed-position geometry from canvas + node frames. */
@@ -100,6 +102,10 @@ export function getFocusedInputNode(): CNode | null {
   return focusedNode;
 }
 
+export function getFocusedInputElement(): HTMLInputElement | HTMLTextAreaElement | null {
+  return focusedOverlay?.element ?? null;
+}
+
 export function isFocusedInput(node: CNode): boolean {
   return focusedNode === node;
 }
@@ -113,6 +119,10 @@ export function notePointerDownOnInput(node: CNode): void {
   if (focusedNode === node) reclaim = { node, at: Date.now() };
 }
 
+export function inputKeyPressed(node: CNode, key: string): void {
+  specOfInput(node).onKeyPress?.({ nativeEvent: { key } });
+}
+
 const controllerFor = (node: CNode): OverlayController => ({
   onInput: (text) => inputTextChanged(node, text),
   onSubmit: () => submitInput(node),
@@ -123,7 +133,7 @@ const controllerFor = (node: CNode): OverlayController => ({
     }
     if (focusedNode === node) blurInput(node);
   },
-  onKeyPress: (key) => specOfInput(node).onKeyPress?.({ nativeEvent: { key } }),
+  onKeyPress: (key) => inputKeyPressed(node, key),
 });
 
 export function focusInput(node: CNode): void {

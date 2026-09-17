@@ -90,6 +90,47 @@ export class RootImpl implements NativeRoot, RootHooks, ContainerHost {
   private ready = false;
   private readonly pointer: PointerPipeline;
   private detachListeners: (() => void) | null = null;
+  // Allocated only by optional observation tooling. No revision/tree work in
+  // the normal renderer; the subscriber owns its revision epoch.
+  private frameObservers: Set<(event: 'frame' | 'destroy') => void> | null = null;
+
+  /** @internal Optional observation seam; deliberately absent from NativeRoot. */
+  subscribeFrames(listener: (event: 'frame' | 'destroy') => void): () => void {
+    if (this.destroyed) throw new Error('native-surface: root is unmounted');
+    (this.frameObservers ??= new Set()).add(listener);
+    return () => {
+      this.frameObservers?.delete(listener);
+      if (!this.frameObservers?.size) this.frameObservers = null;
+    };
+  }
+
+  /** @internal No forced idle paint and no task/timer delay. */
+  flushPending(): void {
+    if (this.destroyed) throw new Error('native-surface: root is unmounted');
+    if (!this.ready) throw new Error('native-surface: await root.whenReady() first');
+    if (!this.dirty) return;
+    this.cancelFrame?.();
+    this.cancelFrame = null;
+    this.frameScheduled = false;
+    this.doFlush();
+  }
+
+  /** @internal Warm a capture buffer before WebGL discards the back buffer. */
+  captureFrame(consume: () => void): void {
+    const pending = this.dirty;
+    this.flushPending();
+    if (pending) consume();
+    else this.doFlush(consume);
+  }
+
+  /** @internal Headless/raw capture. Caller owns the returned Skia image. */
+  captureImage() {
+    if (!this.surface || this.destroyed) throw new Error('native-surface: no surface');
+    return this.surface.makeImageSnapshot();
+  }
+
+  /** @internal Used only while a stability waiter exists. */
+  get hasPendingFrame(): boolean { return !this.ready || this.dirty || this.frameScheduled; }
 
   constructor(target: HTMLCanvasElement | { surfaceWidth: number; surfaceHeight: number }, opts: RootOptions) {
     this.cssWidth = opts.width;
@@ -275,8 +316,9 @@ export class RootImpl implements NativeRoot, RootHooks, ContainerHost {
     return { canvas: this.canvas, cssWidth: this.cssWidth, cssHeight: this.cssHeight };
   }
 
-  private doFlush(): void {
+  private doFlush(consume?: () => void): void {
     if (!this.ready || this.destroyed || !this.surface) return;
+    const changed = this.dirty;
     this.dirty = false;
     const { ck } = getEngine();
 
@@ -300,6 +342,12 @@ export class RootImpl implements NativeRoot, RootHooks, ContainerHost {
     syncFocusedOverlay(this.rootNode);
     // same beat for portal elements (iframes, videos): create/diff/reposition
     syncPortalOverlays(this.rootNode);
+    // Subscribers capture synchronously here, while WebGL pixels still exist.
+    // An explicit idle flush is not an observable change.
+    if (changed || ctx.needsAnimationFrame) {
+      this.frameObservers?.forEach((listener) => listener('frame'));
+    }
+    consume?.();
     // continuous repaint for time-based paints (spinners, fading indicators) —
     // browser only; in Node a test drives frames explicitly via flush()
     if (ctx.needsAnimationFrame && !isNode) this.scheduleFlush();
@@ -388,6 +436,8 @@ export class RootImpl implements NativeRoot, RootHooks, ContainerHost {
       r.flushPassiveEffects(); // run useEffect cleanups in the canvas tree
     }
     this.destroyed = true;
+    this.frameObservers?.forEach((listener) => listener('destroy'));
+    this.frameObservers = null;
     this.cancelFrame?.();
     this.cancelFrame = null;
     this.frameScheduled = false;
